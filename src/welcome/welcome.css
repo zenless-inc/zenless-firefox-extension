@@ -1,0 +1,132 @@
+body {
+  font-size: 14.5px;
+  min-height: 100vh;
+  background:
+    radial-gradient(900px 480px at 15% -10%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 70%),
+    radial-gradient(800px 460px at 95% -5%, color-mix(in srgb, var(--accent2) 11%, transparent), transparent 70%),
+    var(--bg);
+  background-repeat: no-repeat;
+}
+
+.grow { flex: 1; min-width: 0; }
+
+.welcome {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 64px 28px 56px;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+/* ------------------------------------------------------------------ hero */
+
+.hero { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px; }
+.hero-logo {
+  position: relative;
+  margin-bottom: 8px;
+  animation: float-in 0.7s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+.hero-logo::after {
+  content: "";
+  position: absolute;
+  inset: -22px;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 30%, transparent), transparent 65%);
+  filter: blur(8px);
+}
+.hero-logo img { border-radius: 22px; box-shadow: var(--shadow); }
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  border-radius: 99px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 12.5px;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+}
+:root[data-mode="light"] .eyebrow { color: color-mix(in srgb, var(--accent) 80%, var(--text)); }
+.hero h1 {
+  font: 750 clamp(30px, 5vw, 46px)/1.08 var(--font-display);
+  letter-spacing: -0.03em;
+  max-width: 16ch;
+}
+.lead { color: var(--text-2); font-size: 16px; line-height: 1.6; max-width: 60ch; }
+
+@keyframes float-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.92); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ---------------------------------------------------------------- checks */
+
+.checks, .features { display: flex; flex-direction: column; gap: 14px; }
+.check-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.check {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px;
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  transition: border-color 0.3s;
+}
+.check img { border-radius: 12px; flex: none; transition: filter 0.3s, opacity 0.3s; }
+.check[data-state="off"] img { filter: grayscale(0.9); opacity: 0.6; }
+.check[data-state="on"] { border-color: color-mix(in srgb, var(--success) 35%, var(--line)); }
+.check h3 { font: 650 15px/1.3 var(--font-display); }
+.check-state { display: flex; align-items: center; gap: 8px; margin-top: 4px; color: var(--dim); font-size: 13px; }
+.check[data-state="on"] .check-state { color: var(--success); }
+.checks-help { color: var(--dim); font-size: 13px; text-align: center; }
+
+.access { align-items: center; padding: 16px 18px; }
+
+/* -------------------------------------------------------------- features */
+
+.feature-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.feature {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 20px;
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  transition: transform 0.2s, border-color 0.2s;
+}
+.feature:hover { transform: translateY(-2px); border-color: var(--accent-line); }
+.feature h3 { font: 650 15px/1.3 var(--font-display); margin-top: 6px; }
+.feature p { color: var(--dim); font-size: 13.5px; line-height: 1.55; }
+.f-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.f-icon.cyan { background: var(--accent2-soft); color: var(--accent2); }
+.f-icon.green { background: var(--success-soft); color: var(--success); }
+
+/* ------------------------------------------------------------------- cta */
+
+.cta { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
+.cta .btn { text-decoration: none; }
+.tip { display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--dim); font-size: 13px; margin-top: -24px; }
+
+@media (max-width: 860px) {
+  .feature-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 620px) {
+  .welcome { padding: 40px 16px 40px; gap: 32px; }
+  .check-grid, .feature-grid { grid-template-columns: minmax(0, 1fr); }
+  .access { flex-wrap: wrap; }
+  .check { padding: 14px; gap: 12px; flex-wrap: wrap; }
+  .check img { width: 40px; height: 40px; }
+}

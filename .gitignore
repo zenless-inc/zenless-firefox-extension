@@ -1,0 +1,18 @@
+# Packages built locally or by CI
+*.zip
+*.crx
+*.pem
+*.xpi
+web-ext-artifacts/
+
+# Tooling
+node_modules/
+npm-debug.log*
+*.log
+.vscode/
+.idea/
+
+# OS clutter
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Welcome to Zenless</title>
+  <link rel="icon" href="../../icons/icon-32.png">
+  <script src="../ui/theme-boot.js"></script>
+  <link rel="stylesheet" href="../ui/base.css">
+  <link rel="stylesheet" href="welcome.css">
+  <script type="module" src="welcome.js"></script>
+</head>
+<body>
+  <main class="welcome">
+    <section class="hero">
+      <div class="hero-logo">
+        <img src="../ui/img/zenless.svg" alt="" width="84" height="84">
+      </div>
+      <p class="eyebrow">Zenless Browser Integration is installed</p>
+      <h1>Your downloads, handed to <span class="grad-text">Zenless</span>.</h1>
+      <p class="lead">
+        Downloads go to Zenless Download Manager for faster, multi-connection transfers.
+        Magnet links and .torrent files go to Zenless Torrent. You don't have to do anything else.
+      </p>
+    </section>
+
+    <section class="checks" aria-labelledby="checks-h">
+      <h2 class="section-label" id="checks-h">Connected apps</h2>
+      <div class="check-grid">
+        <article class="check" id="check-dm" data-state="wait">
+          <img src="../ui/img/download-manager.svg" alt="" width="48" height="48">
+          <div class="grow">
+            <h3>Zenless Download Manager</h3>
+            <p class="check-state"><span class="dot wait"></span><span class="check-text" role="status">Checking…</span></p>
+          </div>
+          <a class="btn btn-sm check-action" href="#" target="_blank" rel="noopener" hidden>Get it <i data-icon="external" data-size="13"></i></a>
+        </article>
+        <article class="check" id="check-torrent" data-state="wait">
+          <img src="../ui/img/torrent.svg" alt="" width="48" height="48">
+          <div class="grow">
+            <h3>Zenless Torrent</h3>
+            <p class="check-state"><span class="dot wait"></span><span class="check-text" role="status">Checking…</span></p>
+          </div>
+          <a class="btn btn-sm check-action" href="#" target="_blank" rel="noopener" hidden>Get it <i data-icon="external" data-size="13"></i></a>
+        </article>
+      </div>
+      <p class="checks-help" id="checks-help" hidden>
+        Not installed yet? Get both apps free from the Zenless website. This page notices as soon as they start.
+      </p>
+    </section>
+
+    <section class="notice access" id="access-notice" hidden>
+      <i data-icon="lock" data-size="20"></i>
+      <div class="grow">
+        <strong>One more step: allow access to all sites</strong>
+        <p>Your browser installed the extension without site access. Zenless needs it to catch magnet links, pass cookies for logged-in downloads and collect links from pages. It never reads or sends your browsing data anywhere.</p>
+      </div>
+      <button type="button" class="btn btn-primary" id="access-btn">Allow access</button>
+    </section>
+
+    <section class="features" aria-labelledby="features-h">
+      <h2 class="section-label" id="features-h">What it does</h2>
+      <div class="feature-grid">
+        <article class="feature">
+          <span class="f-icon"><i data-icon="download" data-size="20"></i></span>
+          <h3>Download capture</h3>
+          <p>Archives, programs, videos and documents open in Zenless Download Manager's "New download" dialog instead of the browser. If the app isn't running, the browser simply downloads as usual.</p>
+        </article>
+        <article class="feature">
+          <span class="f-icon cyan"><i data-icon="magnet" data-size="20"></i></span>
+          <h3>Magnet links &amp; .torrent files</h3>
+          <p>Click a magnet link or a .torrent file and Zenless Torrent asks which files to get and where to save them.</p>
+        </article>
+        <article class="feature">
+          <span class="f-icon"><i data-icon="pointer" data-size="20"></i></span>
+          <h3>Right-click menu</h3>
+          <p>"Download with Zenless" on any link, "Download all links" on a page or a selection, "Download media" on images and videos, and "Download with browser instead" when you want the usual behavior.</p>
+        </article>
+        <article class="feature">
+          <span class="f-icon cyan"><i data-icon="video" data-size="20"></i></span>
+          <h3>Media on the page</h3>
+          <p>Videos and songs a page plays show up in the toolbar popup with a Download button, and the icon shows how many were found.</p>
+        </article>
+        <article class="feature">
+          <span class="f-icon"><i data-icon="clock" data-size="20"></i></span>
+          <h3>Pause when you need to</h3>
+          <p>Turn capture off, or pause it for five minutes from the popup. Exclude sites and choose file types in settings.</p>
+        </article>
+        <article class="feature">
+          <span class="f-icon green"><i data-icon="shield" data-size="20"></i></span>
+          <h3>Private by design</h3>
+          <p>The extension only talks to the Zenless apps on your own computer (127.0.0.1). No accounts, no analytics, nothing sent to the internet.</p>
+        </article>
+      </div>
+    </section>
+
+    <footer class="cta">
+      <button type="button" class="btn btn-lg btn-primary" id="settings-btn"><i data-icon="sliders" data-size="17"></i>Open settings</button>
+      <a class="btn btn-lg" id="website-btn" href="#" target="_blank" rel="noopener">Get the Zenless apps <i data-icon="external" data-size="15"></i></a>
+    </footer>
+    <p class="tip"><i data-icon="sparkle" data-size="14"></i>Tip: pin Zenless to your toolbar to see active downloads and page media at a glance.</p>
+  </main>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Zenless Settings</title>
+  <link rel="icon" href="../../icons/icon-32.png">
+  <script src="../ui/theme-boot.js"></script>
+  <link rel="stylesheet" href="../ui/base.css">
+  <link rel="stylesheet" href="options.css">
+  <script type="module" src="options.js"></script>
+</head>
+<body>
+  <a class="skip" href="#content">Skip to settings</a>
+  <header class="page-head">
+    <div class="head-inner">
+      <img src="../ui/img/zenless.svg" alt="" width="40" height="40" class="head-logo">
+      <div class="head-text">
+        <h1>Zenless Browser Integration</h1>
+        <p>Settings · <span class="tabular" id="version">v0.1.0</span></p>
+      </div>
+      <div class="head-status" aria-label="App status">
+        <span class="status-chip" id="chip-dm"><span class="dot wait"></span>Download Manager</span>
+        <span class="status-chip" id="chip-torrent"><span class="dot wait"></span>Torrent</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <nav class="side" aria-label="Sections">
+      <a href="#capture"><i data-icon="zap"></i>Capture</a>
+      <a href="#types"><i data-icon="files"></i>File types</a>
+      <a href="#sites"><i data-icon="globe"></i>Excluded sites</a>
+      <a href="#torrents"><i data-icon="magnet"></i>Torrents</a>
+      <a href="#media"><i data-icon="video"></i>Media &amp; alerts</a>
+      <a href="#connection"><i data-icon="plug"></i>Connection</a>
+      <a href="#appearance"><i data-icon="palette"></i>Appearance</a>
+      <a href="#reset"><i data-icon="reset"></i>Reset</a>
+    </nav>
+
+    <main id="content" class="content">
+      <div class="notice" id="access-notice" hidden>
+        <i data-icon="lock" data-size="18"></i>
+        <div class="grow">
+          <strong>Zenless can't see all sites yet</strong>
+          <p>Allow access to all sites so magnet links, logged-in downloads (cookies) and "Download all links" work everywhere.</p>
+        </div>
+        <button type="button" class="btn btn-sm btn-primary" id="access-btn">Allow access</button>
+      </div>
+
+      <!-- Capture -->
+      <section class="card panel" id="capture" aria-labelledby="capture-h">
+        <div class="panel-head">
+          <h2 id="capture-h">Download capture</h2>
+          <p>Hand browser downloads to Zenless Download Manager, like IDM does.</p>
+        </div>
+
+        <div class="row">
+          <div class="row-text">
+            <label for="capture-enabled">Capture downloads</label>
+            <p id="capture-enabled-help">When off, every download stays in the browser.</p>
+          </div>
+          <input type="checkbox" class="switch" id="capture-enabled" role="switch" aria-describedby="capture-enabled-help">
+        </div>
+
+        <fieldset class="row stack">
+          <legend class="row-text"><span class="label">What to capture</span></legend>
+          <div class="choice-grid">
+            <label class="choice">
+              <input type="radio" name="capture-mode" value="types">
+              <span class="choice-body">
+                <span class="choice-title"><i data-icon="files" data-size="15"></i>Only these file types</span>
+                <span class="choice-text">Archives, programs, video, music and documents from the list below.</span>
+              </span>
+            </label>
+            <label class="choice">
+              <input type="radio" name="capture-mode" value="all">
+              <span class="choice-body">
+                <span class="choice-title"><i data-icon="layers" data-size="15"></i>Everything</span>
+                <span class="choice-text">Every http(s) download goes to Zenless, whatever its type.</span>
+              </span>
+            </label>
+          </div>
+        </fieldset>
+
+        <div class="row">
+          <div class="row-text">
+            <label for="min-size">Minimum size</label>
+            <p id="min-size-help">Smaller downloads stay in the browser. 0 captures files of any size.</p>
+          </div>
+          <div class="size-input">
+            <input type="number" class="input" id="min-size" min="0" step="1" inputmode="decimal" aria-describedby="min-size-help">
+            <select class="select" id="min-unit" aria-label="Size unit">
+              <option value="KB">KB</option>
+              <option value="MB">MB</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- File types -->
+      <section class="card panel" id="types" aria-labelledby="types-h">
+        <div class="panel-head">
+          <h2 id="types-h">File types <span class="count" id="types-count">0</span></h2>
+          <p>Extensions captured in "Only these file types" mode. Type one or more and press Enter.</p>
+        </div>
+        <div class="chip-editor" id="types-editor">
+          <ul class="chips" id="types-chips" aria-label="Captured file types"></ul>
+          <div class="chip-add">
+            <input type="text" class="input" id="types-input" placeholder="Add types, e.g. zip, iso, epub" aria-label="Add file types" autocomplete="off" spellcheck="false">
+            <button type="button" class="btn" id="types-add"><i data-icon="plus" data-size="15"></i>Add</button>
+          </div>
+        </div>
+        <div class="panel-foot">
+          <button type="button" class="btn btn-ghost btn-sm" id="types-restore"><i data-icon="reset" data-size="14"></i>Restore default list</button>
+        </div>
+      </section>
+
+      <!-- Excluded sites -->
+      <section class="card panel" id="sites" aria-labelledby="sites-h">
+        <div class="panel-head">
+          <h2 id="sites-h">Excluded sites <span class="count" id="sites-count">0</span></h2>
+          <p>Downloads from or linked on these sites are never captured. <code>example.com</code> covers its subdomains too.</p>
+        </div>
+        <div class="chip-editor" id="sites-editor">
+          <ul class="chips" id="sites-chips" aria-label="Excluded sites"></ul>
+          <p class="chips-empty" id="sites-empty">No excluded sites.</p>
+          <div class="chip-add">
+            <input type="text" class="input" id="sites-input" placeholder="Add a site, e.g. drive.google.com" aria-label="Add excluded site" autocomplete="off" spellcheck="false">
+            <button type="button" class="btn" id="sites-add"><i data-icon="plus" data-size="15"></i>Add</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Torrents -->
+      <section class="card panel" id="torrents" aria-labelledby="torrents-h">
+        <div class="panel-head">
+          <h2 id="torrents-h">Torrents</h2>
+          <p>Zenless Torrent opens its "Add torrent" dialog so you can pick files and a folder.</p>
+        </div>
+        <div class="row">
+          <div class="row-text">
+            <label for="magnet-enabled">Open magnet links in Zenless Torrent</label>
+            <p id="magnet-help">If Zenless Torrent isn't running, the browser's usual handler opens the link.</p>
+          </div>
+          <input type="checkbox" class="switch" id="magnet-enabled" role="switch" aria-describedby="magnet-help">
+        </div>
+        <div class="row">
+          <div class="row-text">
+            <label for="torrent-files">Send .torrent downloads to Zenless Torrent</label>
+            <p id="torrent-files-help">Instead of saving the .torrent file or giving it to the Download Manager.</p>
+          </div>
+          <input type="checkbox" class="switch" id="torrent-files" role="switch" aria-describedby="torrent-files-help">
+        </div>
+      </section>
+
+      <!-- Media & notifications -->
+      <section class="card panel" id="media" aria-labelledby="media-h">
+        <div class="panel-head">
+          <h2 id="media-h">Media &amp; notifications</h2>
+        </div>
+        <div class="row">
+          <div class="row-text">
+            <label for="media-sniffer">Detect video and audio on pages</label>
+            <p id="media-help">Streams over 512 KB appear in the popup with a Download button, and the toolbar icon shows how many were found.</p>
+          </div>
+          <input type="checkbox" class="switch" id="media-sniffer" role="switch" aria-describedby="media-help">
+        </div>
+        <div class="row">
+          <div class="row-text">
+            <label for="notifications">Notifications</label>
+            <p id="notifications-help">Tell me when an app isn't running or couldn't take a download.</p>
+          </div>
+          <input type="checkbox" class="switch" id="notifications" role="switch" aria-describedby="notifications-help">
+        </div>
+      </section>
+
+      <!-- Connection -->
+      <section class="card panel" id="connection" aria-labelledby="connection-h">
+        <div class="panel-head">
+          <h2 id="connection-h">Connection</h2>
+          <p>The apps listen on your own computer (127.0.0.1) only. Change the ports only if you changed them in the apps.</p>
+        </div>
+        <div class="port-grid">
+          <div class="port-card">
+            <img src="../ui/img/download-manager.svg" alt="" width="36" height="36">
+            <div class="grow">
+              <label for="dm-port">Download Manager port</label>
+              <div class="port-row">
+                <input type="number" class="input port" id="dm-port" min="1" max="65535" inputmode="numeric">
+                <button type="button" class="btn" id="test-dm"><i data-icon="refresh" data-size="14"></i>Test</button>
+              </div>
+              <p class="test-result" id="test-dm-result" role="status" aria-live="polite"></p>
+            </div>
+          </div>
+          <div class="port-card">
+            <img src="../ui/img/torrent.svg" alt="" width="36" height="36">
+            <div class="grow">
+              <label for="torrent-port">Torrent port</label>
+              <div class="port-row">
+                <input type="number" class="input port" id="torrent-port" min="1" max="65535" inputmode="numeric">
+                <button type="button" class="btn" id="test-torrent"><i data-icon="refresh" data-size="14"></i>Test</button>
+              </div>
+              <p class="test-result" id="test-torrent-result" role="status" aria-live="polite"></p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Appearance -->
+      <section class="card panel" id="appearance" aria-labelledby="appearance-h">
+        <div class="panel-head">
+          <h2 id="appearance-h">Theme</h2>
+          <p>The same 13 themes as the Zenless apps. Pick the one you use there for a seamless look.</p>
+        </div>
+        <div class="theme-grid" id="theme-grid" role="radiogroup" aria-labelledby="appearance-h"></div>
+      </section>
+
+      <!-- Reset -->
+      <section class="card panel" id="reset" aria-labelledby="reset-h">
+        <div class="row">
+          <div class="row-text">
+            <h2 id="reset-h" class="label">Reset to defaults</h2>
+            <p>Restores every setting on this page, including the file type list and excluded sites.</p>
+          </div>
+          <button type="button" class="btn btn-danger" id="reset-btn"><i data-icon="reset" data-size="15"></i>Reset…</button>
+        </div>
+      </section>
+
+      <footer class="about">
+        <span>Zenless Browser Integration <span class="tabular" id="about-version">0.1.0</span></span>
+        <span aria-hidden="true">·</span>
+        <a id="website-link" href="#" target="_blank" rel="noopener">Website</a>
+        <span aria-hidden="true">·</span>
+        <a id="welcome-link" href="../welcome/welcome.html">Welcome page</a>
+        <span aria-hidden="true">·</span>
+        <span>Nothing leaves your computer except requests to 127.0.0.1.</span>
+      </footer>
+    </main>
+  </div>
+
+  <dialog id="reset-dialog" aria-labelledby="reset-dialog-h">
+    <form method="dialog" class="dialog-body">
+      <h2 id="reset-dialog-h">Reset all settings?</h2>
+      <p>Capture options, file types, excluded sites, ports and theme go back to their defaults.</p>
+      <div class="dialog-actions">
+        <button type="submit" class="btn btn-ghost" value="cancel" id="reset-cancel">Cancel</button>
+        <button type="submit" class="btn btn-danger" value="reset" id="reset-confirm">Reset settings</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

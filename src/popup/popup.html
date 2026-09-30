@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Zenless</title>
+  <script src="../ui/theme-boot.js"></script>
+  <link rel="stylesheet" href="../ui/base.css">
+  <link rel="stylesheet" href="popup.css">
+  <script type="module" src="popup.js"></script>
+</head>
+<body>
+  <div class="popup">
+    <header class="top">
+      <img class="logo" src="../ui/img/zenless.svg" alt="" width="30" height="30">
+      <div class="brand">
+        <strong>Zenless</strong>
+        <span>Browser Integration</span>
+      </div>
+      <button type="button" class="icon-btn" id="settings-btn" title="Settings" aria-label="Open settings">
+        <i data-icon="sliders" data-size="18"></i>
+      </button>
+    </header>
+
+    <section class="card apps" aria-label="Zenless apps">
+      <div class="app-row" id="tile-dm" data-state="wait">
+        <img src="../ui/img/download-manager.svg" alt="" width="30" height="30">
+        <div class="app-meta">
+          <span class="app-name">Download Manager</span>
+          <span class="state-text">Checking…</span>
+        </div>
+        <span class="app-pill"><span class="dot wait"></span><span class="pill-text">Checking</span></span>
+      </div>
+      <div class="app-row" id="tile-torrent" data-state="wait">
+        <img src="../ui/img/torrent.svg" alt="" width="30" height="30">
+        <div class="app-meta">
+          <span class="app-name">Torrent</span>
+          <span class="state-text">Checking…</span>
+        </div>
+        <span class="app-pill"><span class="dot wait"></span><span class="pill-text">Checking</span></span>
+      </div>
+      <p class="sr-only" id="status-live" role="status" aria-live="polite"></p>
+    </section>
+
+    <div class="notice" id="access-notice" hidden>
+      <i data-icon="lock" data-size="18"></i>
+      <div class="grow">
+        <strong>Allow access to all sites</strong>
+        <p>Needed for magnet links and logged-in downloads.</p>
+      </div>
+      <button type="button" class="btn btn-sm btn-primary" id="access-btn">Allow</button>
+    </div>
+
+    <section class="card capture" aria-labelledby="capture-title">
+      <div class="capture-row">
+        <span class="capture-icon" aria-hidden="true"><i data-icon="zap" data-size="17"></i></span>
+        <div class="grow">
+          <label class="capture-title" id="capture-title" for="capture-toggle">Capture downloads</label>
+          <p class="capture-sub" id="capture-sub">Loading…</p>
+        </div>
+        <input type="checkbox" class="switch" id="capture-toggle" role="switch" aria-describedby="capture-sub">
+      </div>
+      <button type="button" class="btn btn-sm btn-block pause-btn" id="pause-btn">
+        <i data-icon="pause" data-size="14"></i><span id="pause-label">Pause for 5 minutes</span>
+      </button>
+    </section>
+
+    <section class="offline card" id="offline-card" hidden aria-live="polite">
+      <div class="offline-art" aria-hidden="true">
+        <img src="../ui/img/download-manager.svg" alt="" width="44" height="44" id="offline-logo">
+        <span class="offline-badge"><i data-icon="power" data-size="13"></i></span>
+      </div>
+      <h2 id="offline-title">Zenless Download Manager isn't running</h2>
+      <p id="offline-text">Downloads stay in the browser until it's back. Start it from the Start menu, or get it free.</p>
+      <a class="btn btn-primary btn-sm" id="offline-link" href="#" target="_blank" rel="noopener">
+        Get Zenless <i data-icon="external" data-size="13"></i>
+      </a>
+    </section>
+
+    <section class="block" id="downloads-block" aria-labelledby="downloads-title" hidden>
+      <h2 class="section-label" id="downloads-title">Active downloads <span class="count" id="downloads-count">0</span></h2>
+      <ul class="list" id="downloads-list"></ul>
+      <p class="empty" id="downloads-empty"><i data-icon="check" data-size="14"></i> Nothing downloading right now.</p>
+    </section>
+
+    <section class="block" id="media-block" aria-labelledby="media-title">
+      <h2 class="section-label" id="media-title">Media on this page <span class="count" id="media-count">0</span></h2>
+      <ul class="list" id="media-list"></ul>
+      <p class="empty" id="media-empty"><i data-icon="video" data-size="14"></i> <span id="media-empty-text">Play a video or song and it shows up here.</span></p>
+    </section>
+
+    <footer class="actions">
+      <button type="button" class="btn" id="open-dm"><i data-icon="download" data-size="15"></i><span>Open Download Manager</span></button>
+      <button type="button" class="btn" id="open-torrent"><i data-icon="magnet" data-size="15"></i><span>Open Torrent</span></button>
+    </footer>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

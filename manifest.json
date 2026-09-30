@@ -1,0 +1,61 @@
+{
+  "manifest_version": 3,
+  "name": "Zenless Browser Integration",
+  "short_name": "Zenless",
+  "version": "0.1.0",
+  "description": "Sends downloads to Zenless Download Manager and magnet links / .torrent files to Zenless Torrent. Talks only to the apps on 127.0.0.1.",
+  "homepage_url": "https://zenless-suite.vercel.app",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "zenless-integration@zenless-inc.github.io",
+      "strict_min_version": "128.0",
+      "data_collection_permissions": {
+        "required": ["none"]
+      }
+    }
+  },
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "action": {
+    "default_title": "Zenless",
+    "default_popup": "src/popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
+  },
+  "background": {
+    "scripts": ["src/background.js"],
+    "type": "module"
+  },
+  "options_ui": {
+    "page": "src/options/options.html",
+    "open_in_tab": true
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["src/content/magnet.js"],
+      "all_frames": true,
+      "match_about_blank": true,
+      "run_at": "document_start"
+    }
+  ],
+  "permissions": [
+    "downloads",
+    "contextMenus",
+    "cookies",
+    "storage",
+    "notifications",
+    "scripting",
+    "webRequest",
+    "tabs"
+  ],
+  "host_permissions": ["<all_urls>"]
+}
