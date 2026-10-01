@@ -50,7 +50,16 @@ function storageArea(name, onChanged) {
   };
 }
 
-export function createFakeBrowser({ id = 'test-extension-id', cookies = [] } = {}) {
+/**
+ * @param {{id?: string, cookies?: object[], determiningFilename?: boolean,
+ *          version?: string, installType?: string}} [opts]
+ *   `determiningFilename` adds Chromium's `downloads.onDeterminingFilename`.
+ *   `version` (manifest) and `installType` (management.getSelf) can be
+ *   changed later through `runtime._version` and `management._installType`.
+ */
+export function createFakeBrowser({
+  id = 'test-extension-id', cookies = [], determiningFilename = false, version = '0.1.0', installType = 'development',
+} = {}) {
   const calls = [];
   const rec = (name, result) => (...args) => {
     calls.push({ name, args });
@@ -65,6 +74,9 @@ export function createFakeBrowser({ id = 'test-extension-id', cookies = [] } = {
       id,
       lastError: undefined,
       getURL: (p) => `chrome-extension://${id}/${p.replace(/^\//, '')}`,
+      _version: version,
+      getManifest: () => ({ manifest_version: 3, version: api.runtime._version }),
+      reload: rec('runtime.reload'),
       onMessage: event(),
       onInstalled: event(),
       onStartup: event(),
@@ -88,6 +100,7 @@ export function createFakeBrowser({ id = 'test-extension-id', cookies = [] } = {
       search: rec('downloads.search', (q) => Promise.resolve([{ id: q.id, state: downloadsState.get(q.id) ?? 'in_progress' }])),
       download: rec('downloads.download', 99),
       _setState: (dlId, st) => downloadsState.set(dlId, st),
+      ...(determiningFilename ? { onDeterminingFilename: event() } : {}),
     },
     notifications: {
       create: rec('notifications.create', 'n'),
@@ -123,6 +136,10 @@ export function createFakeBrowser({ id = 'test-extension-id', cookies = [] } = {
     permissions: {
       contains: rec('permissions.contains', true),
       request: rec('permissions.request', true),
+    },
+    management: {
+      _installType: installType,
+      getSelf: rec('management.getSelf', () => Promise.resolve({ id, installType: api.management._installType })),
     },
   };
   return api;

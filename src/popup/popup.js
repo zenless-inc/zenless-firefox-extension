@@ -5,9 +5,10 @@ import { extensionOf, isHttpUrl } from '../lib/capture.js';
 import { DOWNLOAD_PAGE_URL, PAUSE_MS } from '../lib/config.js';
 import { countdown, humanBytes, humanSpeed, percent } from '../lib/format.js';
 import { suggestMediaFilename } from '../lib/media.js';
+import { activeNotice, noticeContent, UPDATE_NOTICE_KEY } from '../lib/selfupdate.js';
 import { isPaused, updateSettings } from '../lib/settings.js';
 import { mediaStorageKey } from '../lib/tabmedia.js';
-import { $, h, icon, toast } from '../ui/dom.js';
+import { $, copyText, h, icon, toast } from '../ui/dom.js';
 import { hasSiteAccess, initPage, openOptions, openTab, requestSiteAccess } from '../ui/page.js';
 
 const POLL_MS = 2000;
@@ -272,6 +273,47 @@ async function checkAccess() {
 }
 
 // ---------------------------------------------------------------------------
+// Extension update notice (see lib/selfupdate.js)
+// ---------------------------------------------------------------------------
+
+let updateAddress = '';
+
+function renderUpdateNotice(stored) {
+  const notice = activeNotice(stored, api.runtime.getManifest().version);
+  const box = $('#update-notice');
+  box.hidden = !notice;
+  if (!notice) return;
+  const content = noticeContent(notice);
+  updateAddress = content.address;
+  $('#update-title').textContent = content.title;
+  $('#update-text').textContent = content.text;
+  $('#update-open').hidden = !content.canOpen;
+}
+
+async function copyUpdateAddress() {
+  if (await copyText(updateAddress)) toast('Copied. Paste it into the address bar');
+  else toast(`Couldn't copy. Type ${updateAddress} into the address bar`, 'error');
+}
+
+async function openUpdateAddress() {
+  try {
+    await openTab(updateAddress);
+    window.close();
+  } catch {
+    copyUpdateAddress();
+  }
+}
+
+async function checkUpdate() {
+  const data = await api.storage.local.get(UPDATE_NOTICE_KEY).catch(() => ({}));
+  renderUpdateNotice(data?.[UPDATE_NOTICE_KEY]);
+  // Asks the Download Manager now. An unpacked copy may reload itself to
+  // pick up the new version, which closes this popup.
+  const res = await api.runtime.sendMessage({ type: 'zenless:check-update' }).catch(() => null);
+  if (res && 'notice' in res) renderUpdateNotice(res.notice);
+}
+
+// ---------------------------------------------------------------------------
 
 async function main() {
   settings = await initPage((next) => {
@@ -291,6 +333,9 @@ async function main() {
   $('#open-dm').addEventListener('click', () => openApp('dm'));
   $('#open-torrent').addEventListener('click', () => openApp('torrent'));
   $('#offline-link').href = DOWNLOAD_PAGE_URL;
+  $('#popup-version').textContent = `v${api.runtime.getManifest().version}`;
+  $('#update-copy').addEventListener('click', copyUpdateAddress);
+  $('#update-open').addEventListener('click', openUpdateAddress);
   $('#access-btn').addEventListener('click', async () => {
     if (await requestSiteAccess()) toast('Thanks! Zenless can now work on every site');
     checkAccess();
@@ -298,12 +343,14 @@ async function main() {
 
   api.storage.onChanged.addListener((changes, area) => {
     if (area === 'session' && tab && changes[mediaStorageKey(tab.id)]) renderMedia();
+    if (area === 'local' && changes[UPDATE_NOTICE_KEY]) renderUpdateNotice(changes[UPDATE_NOTICE_KEY].newValue);
   });
 
   renderCapture();
   renderFooter();
   renderMedia();
   checkAccess();
+  checkUpdate();
   // Poll every 2 s while the popup is open, never overlapping requests.
   const loop = async () => {
     await poll().catch(() => {});

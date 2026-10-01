@@ -34,7 +34,7 @@ jobs:
       - name: web-ext lint
         run: |
           set -f  # keep the ignore globs away from the shell
-          npx --yes web-ext lint --source-dir . --ignore-files $WEB_EXT_IGNORE
+          npx --yes web-ext lint --self-hosted --source-dir . --ignore-files $WEB_EXT_IGNORE
 
       - name: Tag matches manifest version
         if: startsWith(github.ref, 'refs/tags/v')
@@ -48,7 +48,7 @@ jobs:
       - name: Package extension (unsigned)
         # An .xpi is a zip with manifest.json at its root.
         run: |
-          rm -f zenless-firefox-extension.xpi
+          rm -f zenless-firefox-extension.xpi zenless-firefox-extension.xpi.sha256 updates.json
           zip -r -9 -X zenless-firefox-extension.xpi manifest.json icons src LICENSE -x '*.DS_Store' -x '*Thumbs.db'
           unzip -l zenless-firefox-extension.xpi
 
@@ -64,15 +64,37 @@ jobs:
           mv "$signed" zenless-firefox-extension.xpi
           echo "Signed: $signed"
 
+      - name: Checksum
+        # "<hex>  <name>", like sha256sum, for the final (signed or unsigned)
+        # file. Zenless Download Manager's updater prefers GitHub's own asset
+        # digest and falls back to this file.
+        run: |
+          sha256sum zenless-firefox-extension.xpi > zenless-firefox-extension.xpi.sha256
+          cat zenless-firefox-extension.xpi.sha256
+
+      - name: Update manifest entry (copy to zenless-website/firefox/updates.json)
+        # gecko.update_url points at the website. Only signed builds can be
+        # installed by Firefox, so only they get an entry.
+        if: env.AMO_JWT_ISSUER != '' && env.AMO_JWT_SECRET != '' && startsWith(github.ref, 'refs/tags/v')
+        run: |
+          node scripts/updates-manifest.js zenless-firefox-extension.xpi "$GITHUB_REF_NAME" > updates.json
+          cat updates.json
+
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v4
         with:
           name: zenless-firefox-extension
-          path: zenless-firefox-extension.xpi
+          path: |
+            zenless-firefox-extension.xpi
+            zenless-firefox-extension.xpi.sha256
+            updates.json
+          if-no-files-found: warn
 
       - name: Attach to GitHub release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: zenless-firefox-extension.xpi
+          files: |
+            zenless-firefox-extension.xpi
+            zenless-firefox-extension.xpi.sha256
           generate_release_notes: true

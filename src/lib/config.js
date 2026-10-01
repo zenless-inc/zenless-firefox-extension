@@ -5,7 +5,7 @@
 /** Which browser family this build targets. */
 export const BROWSER = 'firefox';
 
-export const VERSION = '0.1.0';
+export const VERSION = '0.2.0';
 
 /** Sent as `X-Zenless-Client` on every POST to the Zenless apps. */
 export const CLIENT_NAME = `firefox-extension/${VERSION}`;

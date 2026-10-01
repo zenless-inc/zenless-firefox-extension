@@ -83,6 +83,14 @@ body { overflow-x: hidden; }
 #access-notice { align-items: center; }
 #access-notice .icon { margin-top: 0; }
 
+#update-notice > .icon { color: var(--accent2); }
+#update-notice {
+  border-color: color-mix(in srgb, var(--accent2) 38%, transparent);
+  background: color-mix(in srgb, var(--accent2) 8%, var(--surface));
+}
+#update-notice p { overflow-wrap: anywhere; }
+.notice-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+
 /* ----------------------------------------------------------------- capture */
 
 .capture { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
@@ -231,3 +239,10 @@ body { overflow-x: hidden; }
 }
 .actions .btn { padding: 0 10px; font-size: 12px; min-width: 0; }
 .actions .btn span { overflow: hidden; text-overflow: ellipsis; }
+.version-line {
+  grid-column: 1 / -1;
+  margin-top: -2px;
+  text-align: center;
+  color: var(--dim);
+  font-size: 11px;
+}

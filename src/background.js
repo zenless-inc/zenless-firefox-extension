@@ -14,6 +14,7 @@ import { ALLOW_THROUGH_MS, BROWSER, DOWNLOAD_PAGE_URL } from './lib/config.js';
 import { downloadHint, getHeader } from './lib/headers.js';
 import { collectLinksInPage, normalizeLinks } from './lib/links.js';
 import { classifyMedia, MEDIA_REQUEST_TYPES } from './lib/media.js';
+import { activeNotice, availableVersion, decideUpdate, isNewer, RELOAD_ATTEMPT_KEY, UPDATE_NOTICE_KEY } from './lib/selfupdate.js';
 import { isPaused, loadSettings, migrateSettings, SETTINGS_KEY } from './lib/settings.js';
 import { addTabMedia, clearAllTabMedia, clearTabMedia } from './lib/tabmedia.js';
 import { findTheme } from './lib/themes.js';
@@ -156,13 +157,55 @@ function hintFor(urls) {
 // 1. Download capture
 // ---------------------------------------------------------------------------
 
-api.downloads.onCreated.addListener((item) => {
-  handleDownload(item).catch((err) => log('capture error', err));
-});
+/** Longest we keep a Chromium download waiting for our decision. */
+const HOLD_LIMIT_MS = 15 * 1000;
 
-async function handleDownload(item) {
+if (api.downloads.onDeterminingFilename) {
+  // Chromium can't finish a download until every onDeterminingFilename
+  // listener has answered, so a small or fast download can't complete while
+  // we ask the app. (By onCreated time it often already has.)
+  api.downloads.onDeterminingFilename.addListener((item, suggest) => {
+    handOff(() => holdDownload(item, suggest));
+    return true; // suggest() is called asynchronously
+  });
+} else {
+  // Firefox has no such event: pause the download instead.
+  api.downloads.onCreated.addListener((item) => {
+    handOff(() => handleDownload(item)).catch((err) => log('capture error', err));
+  });
+}
+
+async function holdDownload(item, suggest) {
+  let released = false;
+  /** The download stops waiting for us; `answer` lets the browser go on. */
+  const release = (answer) => {
+    if (released) return;
+    released = true;
+    clearTimeout(timer);
+    if (answer) {
+      try {
+        suggest(); // no suggestion: keep the browser's own filename
+      } catch (err) {
+        log('suggest failed:', err?.message || err);
+      }
+    }
+  };
+  const timer = setTimeout(() => release(true), HOLD_LIMIT_MS);
+  try {
+    // A cancelled download no longer waits for an answer, and answering it
+    // anyway only logs an "Unchecked runtime.lastError".
+    if (await handleDownload(item, { held: true })) release(false);
+  } catch (err) {
+    log('capture error', err);
+  } finally {
+    release(true);
+  }
+}
+
+/** @returns {Promise<boolean>} true when the browser's copy was cancelled */
+async function handleDownload(item, { held = false } = {}) {
   const settings = await getSettings();
-  if (!settings.captureEnabled || isPaused(settings)) return;
+  if (!settings.captureEnabled || isPaused(settings)) return false;
 
   const urls = [item.url, item.finalUrl].filter(Boolean);
   const allowedThrough = await takeAllowance(urls);
@@ -174,22 +217,26 @@ async function handleDownload(item) {
     headerInfo: hintFor(urls),
   });
   log('download', item.id, decision.capture ? `→ ${decision.target}` : `skipped (${decision.reason})`);
-  if (!decision.capture) return;
+  if (!decision.capture) return false;
 
   const { target, info } = decision;
   const client = clientFor(target, settings);
   if (!(await isReachable(client))) {
     const name = APPS[target].name;
     notifyOffline(target, settings, `Your download went to the browser instead. Start ${name} to capture downloads, or click here to get it.`);
-    return;
+    return false;
   }
 
-  // Hold the browser's copy while the app accepts the hand-off. If it can't
-  // be paused because it already finished, the user has the file: stop.
-  let paused = await attempt(() => api.downloads.pause(item.id));
-  if (!paused) {
-    const [current] = await api.downloads.search({ id: item.id }).catch(() => []);
-    if (!current || current.state !== 'in_progress') return;
+  // A held download can't finish meanwhile. Otherwise pause the browser's
+  // copy while the app accepts the hand-off; if it can't be paused because
+  // it already finished, the user has the file: stop.
+  let paused = false;
+  if (!held) {
+    paused = await attempt(() => api.downloads.pause(item.id));
+    if (!paused) {
+      const [current] = await api.downloads.search({ id: item.id }).catch(() => []);
+      if (!current || current.state !== 'in_progress') return false;
+    }
   }
 
   const ctx = { referrer: info.referrer, storeId: item.cookieStoreId, incognito: item.incognito };
@@ -198,14 +245,15 @@ async function handleDownload(item) {
     : await sendDownload({ url: info.url, filename: info.filename, size: info.size, mime: info.mime, ...ctx }, settings);
 
   if (res.ok) {
-    await attempt(() => api.downloads.cancel(item.id));
+    const cancelled = await attempt(() => api.downloads.cancel(item.id));
     await attempt(() => api.downloads.erase({ id: item.id }));
-  } else {
-    // Let the browser finish the download itself.
-    if (paused) paused = !(await attempt(() => api.downloads.resume(item.id)));
-    log('hand-off failed:', res.error);
-    if (res.offline) notifyOffline(target, settings);
+    return cancelled;
   }
+  // Let the browser finish the download itself.
+  if (paused) await attempt(() => api.downloads.resume(item.id));
+  log('hand-off failed:', res.error);
+  if (res.offline) notifyOffline(target, settings);
+  return false;
 }
 
 // ---------------------------------------------------------------------------
@@ -215,8 +263,12 @@ async function handleDownload(item) {
 api.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (sender.id !== api.runtime.id || !msg || typeof msg.type !== 'string') return false;
   if (msg.type === 'zenless:magnet') {
-    handleMagnet(msg).then(sendResponse, () => sendResponse({ ok: false }));
+    handOff(() => handleMagnet(msg)).then(sendResponse, () => sendResponse({ ok: false }));
     return true; // keep the channel open for the async answer
+  }
+  if (msg.type === 'zenless:check-update') {
+    checkForUpdate({ force: true }).then(sendResponse, () => sendResponse({ reload: false, notice: null }));
+    return true;
   }
   return false;
 });
@@ -227,6 +279,7 @@ async function handleMagnet({ magnet }) {
   if (!settings.magnetEnabled) return { ok: false, reason: 'disabled' };
   if (!(await isReachable(clientFor('torrent', settings)))) return { ok: false, reason: 'offline' };
   const res = await sendMagnet({ magnet }, settings);
+  log('magnet', res.ok ? '→ torrent' : `hand-off failed: ${res.error}`);
   return { ok: res.ok, reason: res.ok ? 'sent' : 'failed' };
 }
 
@@ -279,7 +332,7 @@ async function createMenus() {
 }
 
 api.contextMenus.onClicked.addListener((info, tab) => {
-  handleMenu(info, tab).catch((err) => log('menu error', err));
+  handOff(() => handleMenu(info, tab)).catch((err) => log('menu error', err));
 });
 
 async function handleMenu(info, tab) {
@@ -422,6 +475,9 @@ async function clearAllMedia() {
 
 // Single-page apps change the URL without loading a new document.
 api.tabs.onUpdated.addListener((tabId, changeInfo) => {
+  // A worker kept alive by busy browsing would otherwise only look for an
+  // update when the popup opens (see section 5). Rate-limited.
+  if (changeInfo.status === 'complete') checkForUpdate().catch(() => {});
   if (!changeInfo.url) return;
   const url = stripHash(changeInfo.url);
   const prev = lastTabUrl.get(tabId);
@@ -433,6 +489,114 @@ api.tabs.onRemoved.addListener((tabId) => {
   lastTabUrl.delete(tabId);
   clearTabMedia(tabId).catch(() => {});
 });
+
+// ---------------------------------------------------------------------------
+// 5. Updates delivered by Zenless Download Manager (see lib/selfupdate.js)
+// ---------------------------------------------------------------------------
+//
+// The Download Manager refreshes the copy Zenless Setup installed and reports
+// the version on disk in /ping. The browser keeps running the code it loaded,
+// so an unpacked Chromium copy reloads itself: once per version, and never
+// while a hand-off is in flight. Everything else gets a notice in the popup.
+
+const UPDATE_CHECK_KEY = 'updateCheckedAt';
+const UPDATE_CHECK_MS = 60 * 1000;
+let updateCheckedAt = 0; // this worker's last check (storage.session spans restarts)
+let handOffs = 0; // downloads, magnets and menu actions being handed to an app
+let reloadFor = null; // version this worker reloads for (once the hand-offs are done)
+let reloadCalled = false;
+
+/** Runs `fn` as a hand-off: a pending reload waits until it has finished. */
+async function handOff(fn) {
+  handOffs += 1;
+  try {
+    return await fn();
+  } finally {
+    handOffs -= 1;
+    reloadWhenIdle();
+  }
+}
+
+/** "development" for an unpacked or temporary copy. getSelf needs no permission. */
+async function installType() {
+  try {
+    return (await api.management?.getSelf?.())?.installType ?? 'unknown';
+  } catch {
+    return 'unknown';
+  }
+}
+
+/**
+ * Asks the Download Manager which version it has on disk, then reloads or
+ * stores a notice. At most once a minute, unless `force` (the popup opened).
+ * @returns {Promise<{reload: boolean, version?: string, notice: object|null}>}
+ */
+async function checkForUpdate({ force = false } = {}) {
+  // Already decided: this worker goes away as soon as nothing is in flight.
+  if (reloadFor) return { reload: true, version: reloadFor, notice: null };
+  const running = api.runtime.getManifest().version;
+  const storedNotice = async () => {
+    const data = await api.storage.local.get(UPDATE_NOTICE_KEY).catch(() => ({}));
+    return activeNotice(data?.[UPDATE_NOTICE_KEY], running);
+  };
+  if (!force) {
+    if (Date.now() - updateCheckedAt < UPDATE_CHECK_MS) return { reload: false, notice: await storedNotice() };
+    updateCheckedAt = Date.now();
+    const data = await api.storage.session.get(UPDATE_CHECK_KEY).catch(() => ({}));
+    if (Date.now() - (data?.[UPDATE_CHECK_KEY] ?? 0) < UPDATE_CHECK_MS) return { reload: false, notice: await storedNotice() };
+  }
+  updateCheckedAt = Date.now();
+  await api.storage.session.set({ [UPDATE_CHECK_KEY]: updateCheckedAt }).catch(() => {});
+
+  // Not running: nothing new to learn, keep what we knew.
+  const ping = await clientFor('dm', await getSettings()).ping();
+  if (!ping.ok) return { reload: false, notice: await storedNotice() };
+
+  const stored = await api.storage.local.get([RELOAD_ATTEMPT_KEY, UPDATE_NOTICE_KEY]).catch(() => ({}));
+  const attempted = stored?.[RELOAD_ATTEMPT_KEY];
+  const type = await installType();
+  const decision = decideUpdate({ available: availableVersion(ping.data), running, installType: type, reloadAttemptFor: attempted });
+
+  if (decision.action === 'reload') {
+    // Remember the attempt first: if the reload doesn't bring the new
+    // version, the next worker shows a notice instead of reloading again.
+    // If it can't be remembered, don't reload at all.
+    try {
+      await api.storage.local.set({ [RELOAD_ATTEMPT_KEY]: decision.version });
+    } catch (err) {
+      log('not reloading, storage failed:', err?.message || err);
+      return { reload: false, notice: await storedNotice() };
+    }
+    log(`version ${decision.version} is installed, ${running} is running: reloading`);
+    reloadFor = decision.version;
+    reloadWhenIdle();
+    return { reload: true, version: decision.version, notice: null };
+  }
+
+  if (decision.action === 'notice') {
+    const notice = { version: decision.version, reason: decision.reason, installType: type };
+    const prev = stored?.[UPDATE_NOTICE_KEY];
+    if (prev?.version !== notice.version || prev?.reason !== notice.reason || prev?.installType !== notice.installType) {
+      await api.storage.local.set({ [UPDATE_NOTICE_KEY]: notice }).catch(() => {});
+    }
+    return { reload: false, notice };
+  }
+
+  // Nothing newer (or an older Download Manager that doesn't report it).
+  // Drop the notice, and the reload attempt once that version is running.
+  const stale = [];
+  if (stored?.[UPDATE_NOTICE_KEY]) stale.push(UPDATE_NOTICE_KEY);
+  if (attempted && !isNewer(attempted, running)) stale.push(RELOAD_ATTEMPT_KEY);
+  if (stale.length) await api.storage.local.remove(stale).catch(() => {});
+  return { reload: false, notice: null };
+}
+
+/** Reloads once nothing is being handed off. At most once per worker. */
+function reloadWhenIdle() {
+  if (!reloadFor || reloadCalled || handOffs > 0) return;
+  reloadCalled = true;
+  attempt(() => api.runtime.reload());
+}
 
 // ---------------------------------------------------------------------------
 // Install / startup
@@ -454,3 +618,9 @@ api.runtime.onStartup.addListener(async () => {
   await createMenus();
   applyBadgeColors(await getSettings());
 });
+
+// The worker starts often (every download, page load or click wakes it), so
+// this notices an update within a minute or so. After a reload, this is the
+// check that finds out whether the new version came up. Not awaited: it never
+// delays the event that woke the worker.
+checkForUpdate().catch((err) => log('update check failed:', err?.message || err));

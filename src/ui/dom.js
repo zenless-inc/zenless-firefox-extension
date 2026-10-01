@@ -100,6 +100,31 @@ export function h(tag, attrs = {}, ...children) {
 
 export const $ = (sel, root = document) => root.querySelector(sel);
 
+/**
+ * Copies text to the clipboard. Call it from a click handler (user gesture).
+ * @returns {Promise<boolean>} whether it worked
+ */
+export async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    // Older engines, or a page that lost focus: fall back to a selection.
+    const area = h('textarea', { readonly: true, style: { position: 'fixed', opacity: '0', pointerEvents: 'none' } });
+    area.value = text;
+    document.body.append(area);
+    area.select();
+    let ok = false;
+    try {
+      ok = document.execCommand('copy');
+    } catch {
+      ok = false;
+    }
+    area.remove();
+    return ok;
+  }
+}
+
 /** Shows a short status message in the page's `#toast` live region. */
 let toastTimer = 0;
 export function toast(message, kind = 'ok') {

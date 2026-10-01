@@ -42,6 +42,18 @@
       <p class="sr-only" id="status-live" role="status" aria-live="polite"></p>
     </section>
 
+    <div class="notice" id="update-notice" role="status" hidden>
+      <i data-icon="refresh" data-size="18"></i>
+      <div class="grow">
+        <strong id="update-title">Extension update available</strong>
+        <p id="update-text"></p>
+        <div class="notice-actions">
+          <button type="button" class="btn btn-sm btn-primary" id="update-copy"><i data-icon="files" data-size="14"></i><span>Copy address</span></button>
+          <button type="button" class="btn btn-sm" id="update-open" hidden><i data-icon="external" data-size="14"></i><span>Open</span></button>
+        </div>
+      </div>
+    </div>
+
     <div class="notice" id="access-notice" hidden>
       <i data-icon="lock" data-size="18"></i>
       <div class="grow">
@@ -92,6 +104,7 @@
     <footer class="actions">
       <button type="button" class="btn" id="open-dm"><i data-icon="download" data-size="15"></i><span>Open Download Manager</span></button>
       <button type="button" class="btn" id="open-torrent"><i data-icon="magnet" data-size="15"></i><span>Open Torrent</span></button>
+      <p class="version-line">Zenless Browser Integration <span class="tabular" id="popup-version"></span></p>
     </footer>
   </div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>

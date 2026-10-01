@@ -27,12 +27,15 @@ The extension only ever talks to the Zenless apps on your own computer (`127.0.0
   - A theme picker with the same **13 themes** as the Zenless apps.
   - Reset to defaults.
 - **Welcome page** on install. It checks both apps live and explains what the extension does. Firefox lets people withhold "Access your data for all websites", so the welcome page, popup and settings check `permissions.contains({origins: ["<all_urls>"]})` and offer an **Allow access** button when it's missing.
+- **Updates.** Signed installs update through `browser_specific_settings.gecko.update_url` (see *Automatic updates*). Zenless Download Manager's updater also refreshes `Browser Extensions\zenless-firefox-extension.xpi` and reports its version in `GET /ping` (`"extensions": {"firefox": "x.y.z"}`). When that version is newer than the running one, the popup shows *Extension update available*: reload a temporary add-on in `about:debugging`, or let Firefox update a signed one (`about:addons` → *Check for Updates*). The address can be copied from the popup, because extensions can't open those pages. The Firefox build never reloads itself: a temporary add-on can't reliably re-read its file. The popup footer shows the running version.
 
 ## Install
 
 ### Signed release (recommended)
 
 Download [`zenless-firefox-extension.xpi`](https://github.com/zenless-inc/zenless-firefox-extension/releases/latest/download/zenless-firefox-extension.xpi) from the latest release and open it in Firefox, or drag it onto a Firefox window. Zenless Setup can install it for you too. Release Firefox only installs **signed** add-ons. Releases are signed when the repository's AMO keys are configured (see *Releasing*).
+
+> **Mozilla signing is pending.** Until a signed release is out, the `.xpi` (including the copy Zenless Setup puts in `Browser Extensions\zenless-firefox-extension.xpi`) can only be loaded as a temporary add-on: open `about:debugging#/runtime/this-firefox` (paste it into the address bar, since Firefox doesn't open it from links or other apps), click **Load Temporary Add-on…** and pick the `.xpi`. It stays until Firefox restarts.
 
 ### Temporary add-on (development)
 
@@ -54,7 +57,7 @@ Plain HTTP + JSON on the loopback interface:
 | Zenless Download Manager | 6812 | `GET /ping`, `GET /status`, `POST /download`, `POST /batch`, `POST /focus` |
 | Zenless Torrent | 6813 | `GET /ping`, `GET /status`, `POST /add`, `POST /focus` |
 
-Every `POST` carries `X-Zenless-Client: firefox-extension/0.1.0`. The apps accept requests only from extension origins (`moz-extension://…`), which web pages can't forge. `/ping` results are cached for 3 seconds, so capture decisions stay instant. You can change the ports in settings if you changed them in the apps.
+Every `POST` carries `X-Zenless-Client: firefox-extension/0.2.0`. The apps accept requests only from extension origins (`moz-extension://…`), which web pages can't forge. `/ping` results are cached for 3 seconds, so capture decisions stay instant. You can change the ports in settings if you changed them in the apps.
 
 ## Development
 
@@ -84,21 +87,25 @@ The background page is non-persistent. It registers every listener at the top le
 
 ## Releasing
 
-Push a tag such as `v0.1.0`. The **Release** workflow:
+Push a tag such as `v0.2.0`. The **Release** workflow:
 
 1. Runs the checks, the unit tests and `web-ext lint`, and confirms that the tag matches `manifest.json`.
 2. Zips `manifest.json`, `icons/`, `src/` and `LICENSE` into `zenless-firefox-extension.xpi`. Tests, docs and `.github/` are not packaged.
-3. **If** the repository secrets `AMO_JWT_ISSUER` and `AMO_JWT_SECRET` are set (AMO → *Developer Hub* → *Manage API Keys*), signs the package through AMO on the **unlisted** channel with `web-ext sign`. The signed file replaces the unsigned one.
-4. Attaches `zenless-firefox-extension.xpi` to the GitHub release.
+3. **If** the repository secrets `AMO_JWT_ISSUER` and `AMO_JWT_SECRET` are set (AMO → *Developer Hub* → *Manage API Keys*), signs the package through AMO on the **unlisted** channel with `web-ext sign`. The signed file replaces the unsigned one, and `scripts/updates-manifest.js` writes the matching `updates.json` entry (job log and workflow artifact).
+4. Attaches `zenless-firefox-extension.xpi` and `zenless-firefox-extension.xpi.sha256` (`<hex>  <name>`, a fallback for GitHub's own asset digest) to the GitHub release.
 
 Without the secrets, the attached `.xpi` is unsigned. It only installs in Firefox Developer Edition or Nightly with `xpinstall.signatures.required` set to `false`, or as a temporary add-on.
+
+### Automatic updates
+
+`browser_specific_settings.gecko.update_url` points at `https://zenless-suite.vercel.app/firefox/updates.json`, which lives in the [zenless-website](https://github.com/zenless-inc/zenless-website) repository (`firefox/updates.json`, served as JSON with a short cache). Firefox checks it about once a day and installs a newer **signed** version by itself (it verifies the `update_hash`). After a signed release, add the entry the workflow printed (or run `node scripts/updates-manifest.js zenless-firefox-extension.xpi v0.2.0`) to that file and deploy the website. Zenless Download Manager's updater also refreshes `Browser Extensions\zenless-firefox-extension.xpi`, so reinstalling from that file gets the current version too. `update_url` is only allowed for self-distributed add-ons, so `web-ext lint` runs with `--self-hosted`. A **listed** AMO version would drop the key and let AMO deliver updates.
 
 ## Publishing on addons.mozilla.org
 
 - Submit at the [Developer Hub](https://addons.mozilla.org/developers/). Use **listed** for the public catalog, or **unlisted** for self-distribution (what the workflow does).
 - No source-code submission is needed: nothing is minified, bundled or generated.
 - Data collection: the manifest declares `"data_collection_permissions": {"required": ["none"]}`. AMO has required this key for new add-ons since November 2025. The declaration is accurate: nothing leaves the device except requests to `127.0.0.1`.
-- `web-ext lint` reports 0 errors and 2 expected warnings. That key is only understood by Firefox 140+ (Android 142+), while `strict_min_version` is 128 so that Firefox 128 ESR is supported. Older versions ignore the key, and because nothing is collected, there is nothing to ask the user. The add-on doesn't target Firefox for Android, which lacks the `downloads` API.
+- `web-ext lint --self-hosted` reports 0 errors and 2 expected warnings. That key is only understood by Firefox 140+ (Android 142+), while `strict_min_version` is 128 so that Firefox 128 ESR is supported. Older versions ignore the key, and because nothing is collected, there is nothing to ask the user. The add-on doesn't target Firefox for Android, which lacks the `downloads` API.
 - Permission rationale for reviewers:
 
 | Permission | Why |
