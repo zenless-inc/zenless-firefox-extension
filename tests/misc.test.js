@@ -6,19 +6,24 @@ import { commonHost, normalizeLinks } from '../src/lib/links.js';
 import { DEFAULT_THEME, PALETTE_FIELDS, THEMES, findTheme, isThemeName, themeVars } from '../src/lib/themes.js';
 
 describe('themes', () => {
-  test('13 built-in themes with complete, valid palettes', () => {
-    assert.equal(THEMES.length, 13);
+  test('34 built-in themes with complete, valid palettes', () => {
+    assert.equal(THEMES.length, 34);
     const names = THEMES.map((t) => t.name);
-    assert.equal(new Set(names).size, 13);
+    assert.equal(new Set(names).size, 34);
     assert.deepEqual(names, [
-      'Zenless', 'Midnight', 'Dracula', 'Nord', 'Tokyo Night', 'Catppuccin Mocha', 'Gruvbox', 'Rosé Pine',
-      'Neon Cyber', 'Forest', 'Solarized Light', 'Paper', 'High Contrast',
+      'Zenless', 'Midnight', 'AMOLED Purple', 'AMOLED Mono', 'AMOLED Crimson', 'AMOLED Emerald',
+      'Dracula', 'Nord', 'Tokyo Night', 'Catppuccin Mocha', 'Gruvbox', 'Rosé Pine', 'One Dark', 'Monokai Pro',
+      'Everforest', 'Kanagawa', 'Ayu Dark', 'Night Owl', 'GitHub Dark', 'Solarized Dark',
+      'Synthwave', 'Neon Cyber', 'Night City', 'Matrix', 'Forest', 'Ocean', 'Sunset', 'Espresso', 'High Contrast',
+      'Paper', 'Solarized Light', 'Catppuccin Latte', 'Lavender', 'Sakura',
     ]);
     for (const t of THEMES) {
       assert.deepEqual(Object.keys(t.palette), PALETTE_FIELDS);
       for (const v of Object.values(t.palette)) assert.match(v, /^#[0-9a-f]{6}$/);
     }
-    assert.deepEqual(THEMES.filter((t) => !t.dark).map((t) => t.name), ['Solarized Light', 'Paper']);
+    assert.deepEqual(THEMES.filter((t) => !t.dark).map((t) => t.name), ['Paper', 'Solarized Light', 'Catppuccin Latte', 'Lavender', 'Sakura']);
+    // AMOLED themes are true black.
+    for (const t of THEMES.filter((x) => x.name.startsWith('AMOLED'))) assert.equal(t.palette.bg, '#000000');
   });
 
   test('brand colors of the default theme', () => {

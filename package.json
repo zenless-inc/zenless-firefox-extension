@@ -1,6 +1,6 @@
 {
   "name": "zenless-firefox-extension",
-  "version": "0.2.0",
+  "version": "0.2.2",
   "private": true,
   "description": "Zenless Browser Integration for Firefox (development tooling only; not part of the extension package).",
   "license": "MIT",

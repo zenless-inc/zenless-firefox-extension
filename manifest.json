@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Zenless Browser Integration",
   "short_name": "Zenless",
-  "version": "0.2.0",
+  "version": "0.2.2",
   "description": "Sends downloads to Zenless Download Manager and magnet links / .torrent files to Zenless Torrent. Talks only to the apps on 127.0.0.1.",
   "homepage_url": "https://zenless-suite.vercel.app",
   "browser_specific_settings": {

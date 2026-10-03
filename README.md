@@ -24,7 +24,7 @@ The extension only ever talks to the Zenless apps on your own computer (`127.0.0
   - Minimum size and excluded sites.
   - Magnet and `.torrent` handling, the media sniffer and notifications.
   - App ports, with **Test** buttons.
-  - A theme picker with the same **13 themes** as the Zenless apps.
+  - A theme picker with the same **34 themes** as the Zenless apps.
   - Reset to defaults.
 - **Welcome page** on install. It checks both apps live and explains what the extension does. Firefox lets people withhold "Access your data for all websites", so the welcome page, popup and settings check `permissions.contains({origins: ["<all_urls>"]})` and offer an **Allow access** button when it's missing.
 - **Updates.** Signed installs update through `browser_specific_settings.gecko.update_url` (see *Automatic updates*). Zenless Download Manager's updater also refreshes `Browser Extensions\zenless-firefox-extension.xpi` and reports its version in `GET /ping` (`"extensions": {"firefox": "x.y.z"}`). When that version is newer than the running one, the popup shows *Extension update available*: reload a temporary add-on in `about:debugging`, or let Firefox update a signed one (`about:addons` → *Check for Updates*). The address can be copied from the popup, because extensions can't open those pages. The Firefox build never reloads itself: a temporary add-on can't reliably re-read its file. The popup footer shows the running version.
@@ -57,7 +57,7 @@ Plain HTTP + JSON on the loopback interface:
 | Zenless Download Manager | 6812 | `GET /ping`, `GET /status`, `POST /download`, `POST /batch`, `POST /focus` |
 | Zenless Torrent | 6813 | `GET /ping`, `GET /status`, `POST /add`, `POST /focus` |
 
-Every `POST` carries `X-Zenless-Client: firefox-extension/0.2.0`. The apps accept requests only from extension origins (`moz-extension://…`), which web pages can't forge. `/ping` results are cached for 3 seconds, so capture decisions stay instant. You can change the ports in settings if you changed them in the apps.
+Every `POST` carries `X-Zenless-Client: firefox-extension/0.2.2`. The apps accept requests only from extension origins (`moz-extension://…`), which web pages can't forge. `/ping` results are cached for 3 seconds, so capture decisions stay instant. You can change the ports in settings if you changed them in the apps.
 
 ## Development
 
@@ -87,7 +87,7 @@ The background page is non-persistent. It registers every listener at the top le
 
 ## Releasing
 
-Push a tag such as `v0.2.0`. The **Release** workflow:
+Push a tag such as `v0.2.2`. The **Release** workflow:
 
 1. Runs the checks, the unit tests and `web-ext lint`, and confirms that the tag matches `manifest.json`.
 2. Zips `manifest.json`, `icons/`, `src/` and `LICENSE` into `zenless-firefox-extension.xpi`. Tests, docs and `.github/` are not packaged.
